@@ -1,5 +1,35 @@
 "use client";
 
+
+// Tries progressively smaller font sizes until the text fits within
+// maxLines at the given width. Falls back to a hard ellipsis-truncated
+// line if even the smallest size won't fit. Pure jsPDF math — no system
+// fonts involved, so this behaves identically on every device.
+function fitTextLines(
+  doc: any,
+  text: string,
+  maxWidthMm: number,
+  maxLines: number,
+  maxSize = 6.5,
+  minSize = 4.2,
+  step = 0.25
+): { fontSize: number; lines: string[] } {
+  for (let size = maxSize; size >= minSize; size -= step) {
+    doc.setFontSize(size);
+    const lines = doc.splitTextToSize(text, maxWidthMm) as string[];
+    if (lines.length <= maxLines) return { fontSize: size, lines };
+  }
+  doc.setFontSize(minSize);
+  const lines = (doc.splitTextToSize(text, maxWidthMm) as string[]).slice(0, maxLines);
+  const lastIdx = lines.length - 1;
+  let last = lines[lastIdx] ?? "";
+  while (last.length > 1 && doc.getTextWidth(last + "…") > maxWidthMm) {
+    last = last.slice(0, -1);
+  }
+  lines[lastIdx] = last + "…";
+  return { fontSize: minSize, lines };
+}
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Patient } from "@/types/patient";
@@ -51,85 +81,103 @@ export default function StickerPage() {
     fetchPatient();
   }, [params.id]);
 
+
   const exportPDF = async () => {
     if (!patient || !qrDataUrl) return;
     setExporting(true);
     try {
       const { jsPDF: JsPDF } = await import("jspdf");
       const doc = new JsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-
-      // Row & Col
+      const FONT = "helvetica";
       const cols = 4, rows = 8;
       const marginX = 2, marginY = 2;
       const gapX = 2, gapY = 2;
-      const pageW = 210, pageH = 297;
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
       const stickerW = (pageW - marginX * 2 - gapX * (cols - 1)) / cols;
       const stickerH = (pageH - marginY * 2 - gapY * (rows - 1)) / rows;
+
+      const headerH = 4;
+      const footerH = 3;
+      const padX = 1.5;
+      const qrSize = Math.min(14, stickerH - headerH - footerH - 1);
+
+      const address = patient.address?.trim();
+      const fields: { label: string; value: string }[] = [
+        { label: "UHID:", value: patient.uhid },
+        { label: "Name:", value: patient.name },
+        { label: "Age/Sex:", value: `${patient.age} Yrs • ${patient.gender}` },
+        { label: "Mobile:", value: patient.mobile },
+        ...(address ? [{ label: "Address:", value: address }] : []),
+      ];
 
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
           const x = marginX + col * (stickerW + gapX);
           const y = marginY + row * (stickerH + gapY);
 
+          // Card border
           doc.setDrawColor(180, 200, 220);
           doc.setLineWidth(0.3);
-          doc.roundedRect(x, y, stickerW, stickerH, 2, 2);
+          doc.roundedRect(x, y, stickerW, stickerH, 1.2, 1.2);
 
+          // Header bar — "F" fills the rounded rect; the old code was
+          // missing this flag, so the top corners were only outlined,
+          // not filled solid navy.
           doc.setFillColor(30, 58, 95);
-          doc.roundedRect(x, y, stickerW, 6, 2, 2);
-          doc.rect(x, y + 3, stickerW, 3, "F");
+          doc.roundedRect(x, y, stickerW, headerH, 1.2, 1.2, "F");
+          doc.rect(x, y + headerH / 2, stickerW, headerH / 2, "F"); // squares off the bottom corners
           doc.setTextColor(255, 255, 255);
+          doc.setFont(FONT, "bold");
           doc.setFontSize(6);
-          doc.setFont("helvetica", "bold");
-          doc.text("HOSPITAL MANAGEMENT SYSTEM", x + stickerW / 2, y + 4, { align: "center" });
-
-          doc.setFillColor(232, 244, 255);
-          doc.rect(x + 1, y + 7, stickerW - 2, 5, "F");
-          doc.setTextColor(30, 58, 95);
-          doc.setFontSize(6.5);
-          doc.setFont("helvetica", "bold");
-          doc.text("UHID:", x + 2.5, y + 10.5);
-          doc.setTextColor(0, 90, 180);
-          doc.setFontSize(7);
-          doc.text(patient.uhid, x + 12, y + 10.5);
-
-          const qrSize = 20;
-          const qrX = x + stickerW - qrSize - 2;
-          const qrY = y + 13;
-          doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
-
-          const infoX = x + 2;
-          let infoY = y + 15;
-          const lineH = 4.5;
-          const fields = [
-            { label: "Name", value: patient.name },
-            { label: "Age", value: `${patient.age} Yrs` },
-            { label: "Gender", value: patient.gender },
-            { label: "Mobile", value: patient.mobile },
-          ];
-          fields.forEach(({ label, value }) => {
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(5.5);
-            doc.setTextColor(100, 120, 140);
-            doc.text(`${label}:`, infoX, infoY);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(20, 30, 50);
-            doc.setFontSize(6);
-            const maxWidth = qrX - infoX - 8;
-            const truncated = doc.splitTextToSize(value, maxWidth)[0];
-            doc.text(truncated, infoX + 12, infoY);
-            infoY += lineH;
+          doc.text("HOSPITAL MANAGEMENT SYSTEM", x + stickerW / 2, y + headerH / 2 + 1.3, {
+            align: "center",
           });
 
+          const bodyTop = y + headerH + 0.8;
+          const bodyBottom = y + stickerH - footerH - 0.5;
+
+          // QR — sized for a reliable scan, not for visual weight
+          const qrX = x + stickerW - qrSize - padX;
+          const qrY = bodyTop + (bodyBottom - bodyTop - qrSize) / 2;
+          doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+
+          // Info rows — spread evenly across the body so a record with
+          // no address still fills the card, same as the on-screen card.
+          const infoX = x + padX;
+          const labelW = 10;
+          const valueX = infoX + labelW;
+          const maxValueWidth = qrX - valueX - 1;
+          const rowSlot = (bodyBottom - bodyTop) / fields.length;
+          const lineH = 1.7;
+
+          fields.forEach((field, i) => {
+            const slotTop = bodyTop + i * rowSlot;
+            const maxLines = field.label === "Name:" || field.label === "Address:" ? 2 : 1;
+            const { fontSize, lines } = fitTextLines(doc, field.value, maxValueWidth, maxLines);
+            const centerY = slotTop + rowSlot / 2 + 0.9;
+
+            doc.setFont(FONT, "normal");
+            doc.setFontSize(5);
+            doc.setTextColor(110, 125, 140);
+            doc.text(field.label, infoX, centerY);
+
+            doc.setFont(FONT, "normal");
+            doc.setFontSize(fontSize);
+            doc.setTextColor(10, 10, 50);
+            const startY = centerY - ((lines.length - 1) * lineH) / 2;
+            lines.forEach((line, li) => doc.text(line, valueX, startY + li * lineH));
+          });
+
+          // Footer
           doc.setDrawColor(200, 215, 230);
           doc.setLineWidth(0.2);
-          doc.line(x + 1, y + stickerH - 5, x + stickerW - 1, y + stickerH - 5);
-          doc.setFont("helvetica", "italic");
-          doc.setFontSize(4.5);
+          doc.line(x + 1, y + stickerH - footerH + 0.3, x + stickerW - 1, y + stickerH - footerH + 0.3);
+          doc.setFont(FONT, "italic");
+          doc.setFontSize(4.3);
           doc.setTextColor(150, 160, 175);
-          const date = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-          doc.text(`Printed: ${date}`, x + 2, y + stickerH - 2.5);
-          doc.text("★ Handle with care", x + stickerW - 2, y + stickerH - 2.5, { align: "right" });
+          doc.text(`Printed: ${printDate}`, x + padX, y + stickerH - 1.3);
+          doc.text("★ Handle with care", x + stickerW - padX, y + stickerH - 1.3, { align: "right" });
         }
       }
 
@@ -360,7 +408,7 @@ export default function StickerPage() {
           <div>
             <p className="text-[13px] font-semibold text-blue-800">Print tips</p>
             <p className="text-[12px] text-blue-600 mt-0.5 leading-relaxed">
-              Export to PDF, then print on A4 adhesive label sheets for best results. 
+              Export to PDF, then print on A4 adhesive label sheets for best results.
               Disable page scaling in your printer settings.
             </p>
           </div>
@@ -464,10 +512,10 @@ function StickerPreview({
             flexDirection: "column",
             justifyContent: "space-between",
           }}
-        >          
+        >
 
-         {/* UUID — wraps up to 2 lines, shrinks a step for long names */}
-          
+          {/* UUID — wraps up to 2 lines, shrinks a step for long names */}
+
           <div style={{ display: "flex", alignItems: "flex-start", gap: "2px" }}>
             <span style={{ fontSize: "5px", color: "#000", minWidth: "24px", flexShrink: 0 }}>
               UUID:
@@ -545,10 +593,9 @@ function StickerPreview({
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: "4.5px", color: "#9aa8b8", fontStyle: "italic" }}>
-          {printDate}
-        </span>
-        <span style={{ fontSize: "4.5px", color: "#9aa8b8" }}>★ Handle with care</span>
+        <span style={{ fontSize: "4.5px", color: "#000000", fontStyle: "italic" }}>
+          Printing on : {printDate}
+        </span>        
       </div>
     </div>
   );
