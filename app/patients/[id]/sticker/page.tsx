@@ -88,7 +88,7 @@ export default function StickerPage() {
       const { jsPDF: JsPDF } = await import("jspdf");
       const doc = new JsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const FONT = "helvetica";
-      const cols = 4, rows = 8;
+      const cols = 4, rows = 9;
       const marginX = 2, marginY = 2;
       const gapX = 2, gapY = 2;
       const pageW = doc.internal.pageSize.getWidth();
@@ -96,8 +96,8 @@ export default function StickerPage() {
       const stickerW = (pageW - marginX * 2 - gapX * (cols - 1)) / cols;
       const stickerH = (pageH - marginY * 2 - gapY * (rows - 1)) / rows;
 
-      const headerH = 4;
-      const footerH = 3;
+      const headerH = 0;
+      const footerH = 0;
       const padX = 1.5;
       const qrSize = Math.min(14, stickerH - headerH - footerH - 1);
 
@@ -105,6 +105,7 @@ export default function StickerPage() {
       const fields: { label: string; value: string }[] = [
         { label: "UHID:", value: patient.uhid },
         { label: "Name:", value: patient.name },
+        { label: "Father's/Hus.:", value: patient.diagnosis ?? "N/A" },
         { label: "Age/Sex:", value: `${patient.age} Yrs • ${patient.gender}` },
         { label: "Mobile:", value: patient.mobile },
         ...(address ? [{ label: "Address:", value: address }] : []),
@@ -116,23 +117,12 @@ export default function StickerPage() {
           const y = marginY + row * (stickerH + gapY);
 
           // Card border
-          doc.setDrawColor(180, 200, 220);
+          doc.setDrawColor(0, 0, 0);
           doc.setLineWidth(0.3);
           doc.roundedRect(x, y, stickerW, stickerH, 1.2, 1.2);
 
-          // Header bar
-          doc.setFillColor(30, 58, 95);
-          doc.roundedRect(x, y, stickerW, headerH, 1.2, 1.2, "F");
-          doc.rect(x, y + headerH / 2, stickerW, headerH / 2, "F");
-          doc.setTextColor(255, 255, 255);
-          doc.setFont(FONT, "bold");
-          doc.setFontSize(6);
-          doc.text("Sticker Creator Agent", x + stickerW / 2, y + headerH / 2 + 1.3, {
-            align: "center",
-          });
-
-          const bodyTop = y + headerH + 0.8;
-          const bodyBottom = y + stickerH - footerH - 0.5;
+          const bodyTop = y + 1;
+          const bodyBottom = y + stickerH - 1;
 
           // QR
           const qrX = x + stickerW - qrSize - padX;
@@ -149,7 +139,7 @@ export default function StickerPage() {
 
           fields.forEach((field, i) => {
             const slotTop = bodyTop + i * rowSlot;
-            const maxLines = field.label === "Name:" || field.label === "Address:" ? 2 : 1;
+            const maxLines = field.label === "Name:"  ? 2 : 1;
             const { fontSize, lines } = fitTextLines(doc, field.value, maxValueWidth, maxLines);
             const centerY = slotTop + rowSlot / 2 + 0.9;
 
@@ -166,15 +156,6 @@ export default function StickerPage() {
             lines.forEach((line, li) => doc.text(line, valueX, startY + li * lineH));
           });
 
-          // Footer
-          doc.setDrawColor(200, 215, 230);
-          doc.setLineWidth(0.2);
-          doc.line(x + 1, y + stickerH - footerH + 0.3, x + stickerW - 1, y + stickerH - footerH + 0.3);
-          doc.setFont(FONT, "italic");
-          doc.setFontSize(4.3);
-          doc.setTextColor(0, 0, 0);
-          doc.text(`Printed: ${printDate}`, x + padX, y + stickerH - 1.3);
-          doc.text("Handle with care", x + stickerW - padX, y + stickerH - 1.3, { align: "right" });
         }
       }
 
@@ -237,15 +218,22 @@ export default function StickerPage() {
     );
   }
 
-  const stickers = Array.from({ length: 32 });
+  const stickers = Array.from({ length: 36 });
+
+  const na = (value: any) =>
+    value === null || value === undefined || value === ""
+      ? "N/A"
+      : value;
 
   const infoFields = [
-    { label: "UHID", value: patient.uhid, mono: true },
-    { label: "Name", value: patient.name },
-    { label: "Age", value: `${patient.age} yrs` },
-    { label: "Gender", value: patient.gender },
-    { label: "Mobile", value: patient.mobile, mono: true },
-    { label: "Blood", value: patient.bloodGroup || "—" },
+    { label: "UHID", value: na(patient.uhid), mono: true },
+    { label: "Name", value: na(patient.name) },
+    { label: "Father", value: na(patient.diagnosis) }, // use correct field
+    { label: "Age", value: patient.age ? `${patient.age} yrs` : "N/A" },
+    { label: "Gender", value: na(patient.gender) },
+    { label: "Mobile", value: na(patient.mobile), mono: true },
+    { label: "Blood", value: na(patient.bloodGroup) },
+    { label: "Address", value: na(patient.address) },
   ];
 
   const avatarColors = [
@@ -366,9 +354,9 @@ export default function StickerPage() {
 
         {/* ── STICKER COUNT BADGE ROW ── */}
         <div className="flex items-center justify-between">
-          <p className="text-[12px] font-medium text-gray-500">A4 preview — 4 × 8 layout</p>
+          <p className="text-[12px] font-medium text-gray-500">A4 preview — 4 × 9 layout</p>
           <span className="text-[11px] bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-full">
-            32 stickers
+            36 stickers
           </span>
         </div>
 
@@ -503,26 +491,12 @@ function StickerPreview({
         border: "1px solid #b4c8dc",
         borderRadius: "6px",
         overflow: "hidden",
-        height: "100px",
+        height: "80px",
         display: "flex",
         flexDirection: "column",
       }}
     >
-      {/* Header bar */}
-      <div
-        style={{
-          background: "#1e3a5f",
-          color: "white",
-          fontSize: "6px",
-          fontWeight: "bold",
-          textAlign: "center",
-          padding: "3px 2px",
-          letterSpacing: "0.3px",
-          flexShrink: 0,
-        }}
-      >
-        Sticker Creator Agent
-      </div>
+
       {/* Body — info column stretches to fill the full height, QR kept
           just large enough to scan so text keeps most of the width */}
       <div style={{ display: "flex", flex: 1, padding: "3px 4px", gap: "2px", minHeight: 0 }}>
@@ -555,6 +529,15 @@ function StickerPreview({
             </span>
             <span style={{ fontSize: `5px`, color: "#14203a", fontWeight: 500, flex: 1, minWidth: 0, ...clampTwoLines }}>
               {patient.name}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "2px" }}>
+            <span style={{ fontSize: "5px", color: "#000", minWidth: "24px", flexShrink: 0 }}>
+              {`Father's/Hus.:`}
+            </span>
+            <span style={{ fontSize: `5px`, color: "#14203a", fontWeight: 500, flex: 1, minWidth: 0, ...clampTwoLines }}>
+              {patient.diagnosis}
             </span>
           </div>
 
@@ -603,21 +586,6 @@ function StickerPreview({
         )}
       </div>
 
-      {/* Footer */}
-      <div
-        style={{
-          borderTop: "1px solid #c8d9e8",
-          padding: "2px 4px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexShrink: 0,
-        }}
-      >
-        <span style={{ fontSize: "4.5px", color: "#000000", fontStyle: "italic" }}>
-          Printing on : {printDate}
-        </span>
-      </div>
     </div>
   );
 }
