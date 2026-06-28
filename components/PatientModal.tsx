@@ -121,7 +121,11 @@ export default function PatientModal({ isOpen, onClose, onSave, patient }: Patie
         admissionDate: patient.admissionDate ? patient.admissionDate.split("T")[0] : "",
       });
     } else {
-      setForm(emptyForm);
+      setForm({
+        ...emptyForm,
+        admissionDate: new Date().toISOString().split("T")[0], // YYYY-MM-DD
+      });
+      
     }
     setErrors({});
     setTouched({});
@@ -237,10 +241,9 @@ export default function PatientModal({ isOpen, onClose, onSave, patient }: Patie
     (touched[field] || attempted) && Boolean(errors[field]);
 
   const inputClass = (field: keyof PatientFormData) =>
-    `w-full rounded-xl border px-3.5 py-3 text-base focus:outline-none focus:ring-2 focus:border-transparent bg-gray-50 transition-colors ${
-      showError(field)
-        ? "border-red-300 focus:ring-red-400"
-        : "border-gray-200 focus:ring-blue-500"
+    `w-full rounded-xl border px-3.5 py-3 text-base focus:outline-none focus:ring-2 focus:border-transparent bg-gray-50 transition-colors ${showError(field)
+      ? "border-red-300 focus:ring-red-400"
+      : "border-gray-200 focus:ring-blue-500"
     }`;
 
   return (
@@ -339,6 +342,34 @@ export default function PatientModal({ isOpen, onClose, onSave, patient }: Patie
                 />
                 {showError("name") && (
                   <p id="name-error" className="text-red-600 text-xs mt-1">{errors.name}</p>
+                )}
+              </div>
+
+              {/* Diagnosis */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label htmlFor="diagnosis" className="block text-sm font-medium text-gray-700">
+                    Fathers/Husbands Name  <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-xs text-gray-400">{form.diagnosis.length}/200</span>
+                </div>
+                <input
+                  id="diagnosis"
+                  type="text"
+                  name="diagnosis"
+                  value={form.diagnosis}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  required={true}
+                  aria-required="true"
+                  maxLength={200}
+                  placeholder="Father's/Husbands name"
+                  aria-invalid={showError("diagnosis")}
+                  aria-describedby={showError("diagnosis") ? "diagnosis-error" : undefined}
+                  className={inputClass("diagnosis")}
+                />
+                {showError("diagnosis") && (
+                  <p id="diagnosis-error" className="text-red-600 text-xs mt-1">{errors.diagnosis}</p>
                 )}
               </div>
 
@@ -442,12 +473,14 @@ export default function PatientModal({ isOpen, onClose, onSave, patient }: Patie
               {/* Admission Date */}
               <div>
                 <label htmlFor="admissionDate" className="block text-sm font-medium text-gray-700 mb-1">
-                  Admission Date
+                  Admission Date  <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="admissionDate"
                   type="date"
                   name="admissionDate"
+                  required={true}
+                  aria-required="true"
                   value={form.admissionDate}
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -461,31 +494,6 @@ export default function PatientModal({ isOpen, onClose, onSave, patient }: Patie
                 )}
               </div>
 
-              {/* Diagnosis */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label htmlFor="diagnosis" className="block text-sm font-medium text-gray-700">
-                    Diagnosis
-                  </label>
-                  <span className="text-xs text-gray-400">{form.diagnosis.length}/200</span>
-                </div>
-                <input
-                  id="diagnosis"
-                  type="text"
-                  name="diagnosis"
-                  value={form.diagnosis}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  maxLength={200}
-                  placeholder="Primary diagnosis"
-                  aria-invalid={showError("diagnosis")}
-                  aria-describedby={showError("diagnosis") ? "diagnosis-error" : undefined}
-                  className={inputClass("diagnosis")}
-                />
-                {showError("diagnosis") && (
-                  <p id="diagnosis-error" className="text-red-600 text-xs mt-1">{errors.diagnosis}</p>
-                )}
-              </div>
             </div>
 
             {/* Address */}
