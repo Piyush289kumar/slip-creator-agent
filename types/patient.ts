@@ -1,3 +1,4 @@
+// types/patient.ts
 export interface Patient {
   _id: string;
   uhid: string;
