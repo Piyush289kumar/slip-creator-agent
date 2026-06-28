@@ -81,7 +81,6 @@ export default function StickerPage() {
     fetchPatient();
   }, [params.id]);
 
-
   const exportPDF = async () => {
     if (!patient || !qrDataUrl) return;
     setExporting(true);
@@ -121,12 +120,10 @@ export default function StickerPage() {
           doc.setLineWidth(0.3);
           doc.roundedRect(x, y, stickerW, stickerH, 1.2, 1.2);
 
-          // Header bar — "F" fills the rounded rect; the old code was
-          // missing this flag, so the top corners were only outlined,
-          // not filled solid navy.
+          // Header bar
           doc.setFillColor(30, 58, 95);
           doc.roundedRect(x, y, stickerW, headerH, 1.2, 1.2, "F");
-          doc.rect(x, y + headerH / 2, stickerW, headerH / 2, "F"); // squares off the bottom corners
+          doc.rect(x, y + headerH / 2, stickerW, headerH / 2, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFont(FONT, "bold");
           doc.setFontSize(6);
@@ -137,19 +134,18 @@ export default function StickerPage() {
           const bodyTop = y + headerH + 0.8;
           const bodyBottom = y + stickerH - footerH - 0.5;
 
-          // QR — sized for a reliable scan, not for visual weight
+          // QR
           const qrX = x + stickerW - qrSize - padX;
           const qrY = bodyTop + (bodyBottom - bodyTop - qrSize) / 2;
           doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
 
-          // Info rows — spread evenly across the body so a record with
-          // no address still fills the card, same as the on-screen card.
+          // Info rows
           const infoX = x + padX;
           const labelW = 10;
           const valueX = infoX + labelW;
           const maxValueWidth = qrX - valueX - 1;
           const rowSlot = (bodyBottom - bodyTop) / fields.length;
-          const lineH = 1.7;
+          const lineH = 2.2;
 
           fields.forEach((field, i) => {
             const slotTop = bodyTop + i * rowSlot;
@@ -157,15 +153,16 @@ export default function StickerPage() {
             const { fontSize, lines } = fitTextLines(doc, field.value, maxValueWidth, maxLines);
             const centerY = slotTop + rowSlot / 2 + 0.9;
 
-            doc.setFont(FONT, "normal");
+            const startY = centerY - ((lines.length - 1) * lineH) / 2;
+
+            doc.setFont(FONT, "bold");
             doc.setFontSize(5);
-            doc.setTextColor(110, 125, 140);
-            doc.text(field.label, infoX, centerY);
+            doc.setTextColor(0, 0, 0);
+            doc.text(field.label, infoX, startY);
 
             doc.setFont(FONT, "normal");
             doc.setFontSize(fontSize);
-            doc.setTextColor(10, 10, 50);
-            const startY = centerY - ((lines.length - 1) * lineH) / 2;
+            doc.setTextColor(0, 0, 0);
             lines.forEach((line, li) => doc.text(line, valueX, startY + li * lineH));
           });
 
@@ -175,9 +172,9 @@ export default function StickerPage() {
           doc.line(x + 1, y + stickerH - footerH + 0.3, x + stickerW - 1, y + stickerH - footerH + 0.3);
           doc.setFont(FONT, "italic");
           doc.setFontSize(4.3);
-          doc.setTextColor(150, 160, 175);
+          doc.setTextColor(0, 0, 0);
           doc.text(`Printed: ${printDate}`, x + padX, y + stickerH - 1.3);
-          doc.text("★ Handle with care", x + stickerW - padX, y + stickerH - 1.3, { align: "right" });
+          doc.text("Handle with care", x + stickerW - padX, y + stickerH - 1.3, { align: "right" });
         }
       }
 
@@ -344,7 +341,7 @@ export default function StickerPage() {
 
         {/* ── STICKER COUNT BADGE ROW ── */}
         <div className="flex items-center justify-between">
-          <p className="text-[12px] font-medium text-gray-500">A4 preview — 4 × 6 layout</p>
+          <p className="text-[12px] font-medium text-gray-500">A4 preview — 4 × 8 layout</p>
           <span className="text-[11px] bg-blue-50 text-blue-700 font-semibold px-2.5 py-1 rounded-full">
             32 stickers
           </span>
@@ -595,7 +592,7 @@ function StickerPreview({
       >
         <span style={{ fontSize: "4.5px", color: "#000000", fontStyle: "italic" }}>
           Printing on : {printDate}
-        </span>        
+        </span>
       </div>
     </div>
   );
