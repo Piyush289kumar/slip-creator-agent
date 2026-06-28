@@ -127,7 +127,7 @@ export default function StickerPage() {
           doc.setTextColor(255, 255, 255);
           doc.setFont(FONT, "bold");
           doc.setFontSize(6);
-          doc.text("HOSPITAL MANAGEMENT SYSTEM", x + stickerW / 2, y + headerH / 2 + 1.3, {
+          doc.text("Sticker Creator Agent", x + stickerW / 2, y + headerH / 2 + 1.3, {
             align: "center",
           });
 
@@ -521,7 +521,7 @@ function StickerPreview({
           flexShrink: 0,
         }}
       >
-        HOSPITAL MANAGEMENT SYSTEM
+        Sticker Creator Agent
       </div>
       {/* Body — info column stretches to fill the full height, QR kept
           just large enough to scan so text keeps most of the width */}
@@ -535,7 +535,6 @@ function StickerPreview({
             justifyContent: "space-between",
           }}
         >
-
           {/* UUID — wraps up to 2 lines, shrinks a step for long names */}
 
           <div style={{ display: "flex", alignItems: "flex-start", gap: "2px" }}>
