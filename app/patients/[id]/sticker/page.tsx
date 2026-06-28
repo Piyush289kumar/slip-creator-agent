@@ -306,36 +306,61 @@ export default function StickerPage() {
       <main className="px-4 py-4 space-y-4 pb-10">
 
         {/* ── PATIENT SUMMARY CARD ── */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${avatarColor} flex items-center justify-center text-white text-[16px] font-bold flex-shrink-0`}>
-              {patient.name.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[15px] font-semibold text-gray-900 truncate">{patient.name}</p>
-              <p className="text-[12px] text-gray-400 font-mono mt-0.5">{patient.uhid}</p>
-            </div>
-            {qrDataUrl && (
-              <img
-                src={qrDataUrl}
-                alt="Patient QR code"
-                className="w-12 h-12 rounded-lg border border-gray-100 flex-shrink-0"
-              />
-            )}
-          </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 lg:p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
 
-          {/* Info grid */}
-          <div className="grid grid-cols-3 gap-3 border-t border-gray-100 pt-3">
-            {infoFields.map((f) => (
-              <div key={f.label}>
-                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">
-                  {f.label}
-                </p>
-                <p className={`text-[13px] font-semibold text-gray-800 truncate ${f.mono ? "font-mono" : ""}`}>
-                  {f.value}
-                </p>
+            {/* Left Side */}
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-11 h-11 rounded-xl bg-gradient-to-br ${avatarColor} flex items-center justify-center text-white text-[16px] font-bold flex-shrink-0`}
+                >
+                  {patient.name.charAt(0).toUpperCase()}
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[15px] lg:text-lg font-semibold text-gray-900 truncate">
+                    {patient.name}
+                  </p>
+
+                  <p className="text-[12px] text-gray-400 font-mono mt-0.5">
+                    {patient.uhid}
+                  </p>
+                </div>
               </div>
-            ))}
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 border-t border-gray-100 mt-5 pt-4">
+                {infoFields.map((f) => (
+                  <div key={f.label}>
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400 font-medium">
+                      {f.label}
+                    </p>
+
+                    <p
+                      className={`text-[13px] lg:text-sm font-semibold text-gray-800 break-words ${f.mono ? "font-mono" : ""
+                        }`}
+                    >
+                      {f.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* QR Code */}
+            {qrDataUrl && (
+              <div className="flex justify-center lg:justify-end lg:flex-shrink-0">
+                <div className="rounded-xl border border-gray-200 p-3 bg-white shadow-sm">
+                  <img
+                    src={qrDataUrl}
+                    alt="Patient QR"
+                    className="w-32 h-32 lg:w-40 lg:h-40 object-contain"
+                  />
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
 
