@@ -1,0 +1,4 @@
+POST https://api.vipprow.com/api/v1/contact
+Content-Type: application/json
+
+{"type":"General","name":"Load Test","email":"load@example.com","phone":"9999999999","subject":"General Inquiry","message":"Performance test"}

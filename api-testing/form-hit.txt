@@ -1,0 +1,24 @@
+#!/bin/bash
+
+URL="https://api.vipprow.com/api/v1/contact"
+
+for i in $(seq 1 500); do
+    START=$(date +%s%3N)
+
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+        -X POST "$URL" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"type\":\"General\",
+            \"name\":\"$i\",
+            \"email\":\"fuck$i@u.com\",
+            \"phone\":\"9999999999\",
+            \"subject\":\"General Inquiry\",
+            \"message\":\"Zabier $i\"
+        }")
+
+    END=$(date +%s%3N)
+    TIME=$((END-START))
+
+    echo "[$(date '+%H:%M:%S')] Request #$i | HTTP $STATUS | ${TIME}ms"
+done
